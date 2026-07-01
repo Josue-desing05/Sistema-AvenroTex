@@ -69,8 +69,7 @@ function App() {
     <div className="seccion-cliente">
       <div className="interfaz-taller client-mode">
         <header className="banner-taller">
-          <h1>SACOS AVENROTEX S.A.C.</h1>
-          <h2>SISTEMA DE CONTROL DE ASISTENCIA</h2>
+          <h1>SISTEMA DE CONTROL DE ASISTENCIA</h1>
         </header>
 
         {paso === 1 && (

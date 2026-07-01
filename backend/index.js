@@ -31,7 +31,7 @@ const dbConfig = {
 // =============================================================================
 app.post('/api/asistencias/verificar-trabajador', async (req, res) => {
     const { dni, pin } = req.body;
-    
+
     if (!dni || !pin) {
         return res.status(400).json({ error: 'DNI y PIN requeridos.' });
     }
@@ -90,7 +90,7 @@ app.post('/api/asistencias/registrar-marca', async (req, res) => {
                 INNER JOIN HORARIOS H ON T.id_horario = H.id_horario
                 WHERE T.id_trabajador = ${id_trabajador}
             `;
-            
+
             const empleado = datosHorario.recordset[0];
             const [h, m] = empleado.hora_entrada.split(':');
             const horaLimite = new Date();
@@ -224,7 +224,7 @@ app.post('/api/admin/trabajadores', async (req, res) => {
                 (SELECT TOP 1 id_regimen FROM REGIMENES_PENSIONARIOS) as id_regimen,
                 (SELECT TOP 1 id_horario FROM HORARIOS) as id_horario
         `;
-        
+
         const { id_regimen, id_horario } = catalogos.recordset[0];
 
         if (!id_regimen || !id_horario) {
@@ -243,10 +243,12 @@ app.post('/api/admin/trabajadores', async (req, res) => {
 
         const id_trabajador = result.recordset[0].id_trabajador;
 
+        const remuneracion = (sueldo_base !== undefined && sueldo_base !== null) ? parseFloat(sueldo_base) : 1025.00;
+
         // Creamos su contrato activo
         await sql.query`
             INSERT INTO CONTRATOS (id_trabajador, tipo_contrato, fecha_inicio, remuneracion_pactada, estado)
-            VALUES (${id_trabajador}, 'PLANILLA', GETDATE(), ${sueldo_base || 1025.00}, 'ACTIVO')
+            VALUES (${id_trabajador}, 'PLANILLA', GETDATE(), ${remuneracion}, 'ACTIVO')
         `;
 
         res.json({ success: true, message: '¡Trabajador registrado y habilitado para marcar en el taller con su respectivo contrato!' });
@@ -319,6 +321,148 @@ app.get('/api/admin/asistencias-historial', async (req, res) => {
         res.json({ success: true, datos: result.recordset });
     } catch (error) {
         res.status(500).json({ error: 'Error al obtener historial: ' + error.message });
+    }
+});
+
+// =============================================================================
+// NUEVOS ENDPOINTS: MÓDULO DE PRODUCCIÓN (Administrador únicamente)
+// =============================================================================
+app.get('/api/admin/produccion', async (req, res) => {
+    try {
+        const result = await sql.query`
+            SELECT 
+                id_produccion,
+                CONVERT(VARCHAR, fecha, 23) AS fecha,
+                cantidad,
+                CONVERT(VARCHAR, fecha_registro, 120) AS fecha_registro
+            FROM PRODUCCION
+            ORDER BY fecha DESC
+        `;
+        res.json({ success: true, datos: result.recordset });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener producción: ' + error.message });
+    }
+});
+
+app.post('/api/admin/produccion', async (req, res) => {
+    const { fecha, cantidad } = req.body;
+
+    if (!fecha || cantidad === undefined) {
+        return res.status(400).json({ error: 'Fecha y cantidad son obligatorios.' });
+    }
+
+    const cantidadVal = parseInt(cantidad);
+
+    try {
+        // Verificar si ya existe producción para esa fecha
+        const existe = await sql.query`
+            SELECT id_produccion FROM PRODUCCION 
+            WHERE fecha = ${fecha}
+        `;
+
+        if (existe.recordset.length > 0) {
+            // Actualizar
+            const id_produccion = existe.recordset[0].id_produccion;
+            await sql.query`
+                UPDATE PRODUCCION 
+                SET cantidad = ${cantidadVal} 
+                WHERE id_produccion = ${id_produccion}
+            `;
+            return res.json({ success: true, message: 'Producción diaria actualizada con éxito.' });
+        } else {
+            // Insertar nuevo
+            await sql.query`
+                INSERT INTO PRODUCCION (fecha, cantidad, fecha_registro)
+                VALUES (${fecha}, ${cantidadVal}, GETDATE())
+            `;
+            return res.json({ success: true, message: 'Producción diaria registrada con éxito.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error al registrar producción: ' + error.message });
+    }
+});
+
+app.delete('/api/admin/produccion/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await sql.query`DELETE FROM PRODUCCION WHERE id_produccion = ${id}`;
+        res.json({ success: true, message: 'Registro de producción eliminado con éxito.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar producción: ' + error.message });
+    }
+});
+
+// =============================================================================
+// NUEVOS ENDPOINTS: MÓDULO DE PLANCHADO POR TRABAJADOR (Destajo)
+// =============================================================================
+app.get('/api/admin/planchado', async (req, res) => {
+    try {
+        const result = await sql.query`
+            SELECT 
+                P.id_planchado,
+                P.id_trabajador,
+                (T.nombres + ' ' + T.apellidos) AS planchador,
+                CONVERT(VARCHAR, P.fecha, 23) AS fecha,
+                P.cantidad,
+                P.tarifa_por_saco,
+                (P.cantidad * P.tarifa_por_saco) AS total_pago,
+                CONVERT(VARCHAR, P.fecha_registro, 120) AS fecha_registro
+            FROM PLANCHADO P
+            INNER JOIN TRABAJADORES T ON P.id_trabajador = T.id_trabajador
+            ORDER BY P.fecha DESC, P.fecha_registro DESC
+        `;
+        res.json({ success: true, datos: result.recordset });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener planchado: ' + error.message });
+    }
+});
+
+app.post('/api/admin/planchado', async (req, res) => {
+    const { id_trabajador, fecha, cantidad } = req.body;
+
+    if (!id_trabajador || !fecha || cantidad === undefined) {
+        return res.status(400).json({ error: 'Trabajador, fecha y cantidad son obligatorios.' });
+    }
+
+    const cantidadVal = parseInt(cantidad);
+    const tarifaVal = 1.50; // Tarifa estándar fija de S/. 1.50 por saco planchado
+
+    try {
+        // Verificar si ya existe planchado para ese trabajador y fecha
+        const existe = await sql.query`
+            SELECT id_planchado FROM PLANCHADO 
+            WHERE id_trabajador = ${id_trabajador} AND fecha = ${fecha}
+        `;
+
+        if (existe.recordset.length > 0) {
+            // Actualizar
+            const id_planchado = existe.recordset[0].id_planchado;
+            await sql.query`
+                UPDATE PLANCHADO 
+                SET cantidad = ${cantidadVal}, tarifa_por_saco = ${tarifaVal} 
+                WHERE id_planchado = ${id_planchado}
+            `;
+            return res.json({ success: true, message: 'Registro de planchado actualizado con éxito.' });
+        } else {
+            // Insertar nuevo
+            await sql.query`
+                INSERT INTO PLANCHADO (id_trabajador, fecha, cantidad, tarifa_por_saco, fecha_registro)
+                VALUES (${id_trabajador}, ${fecha}, ${cantidadVal}, ${tarifaVal}, GETDATE())
+            `;
+            return res.json({ success: true, message: 'Registro de planchado guardado con éxito.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Error al registrar planchado: ' + error.message });
+    }
+});
+
+app.delete('/api/admin/planchado/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        await sql.query`DELETE FROM PLANCHADO WHERE id_planchado = ${id}`;
+        res.json({ success: true, message: 'Registro de planchado eliminado con éxito.' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al eliminar planchado: ' + error.message });
     }
 });
 
@@ -413,8 +557,14 @@ app.get('/api/admin/asistencias-consolidado', async (req, res) => {
                 }
             }
 
+            // Planchador works only 3 times a week (approx. 50% of standard 6-day week)
+            let diasLaborablesTrabajador = diasLaborables;
+            if (t.cargo === 'Planchador') {
+                diasLaborablesTrabajador = Math.round(diasLaborables / 2);
+            }
+
             // Faltas: días laborables - asistencias - vacaciones - justificaciones
-            const numFaltas = Math.max(0, diasLaborables - numAsistencias - diasVacaciones - numJustificaciones);
+            const numFaltas = Math.max(0, diasLaborablesTrabajador - numAsistencias - diasVacaciones - numJustificaciones);
 
             consolidados.push({
                 id_trabajador: id,
@@ -427,7 +577,7 @@ app.get('/api/admin/asistencias-consolidado', async (req, res) => {
                 faltas: numFaltas,
                 justificaciones: numJustificaciones,
                 vacaciones: diasVacaciones,
-                dias_laborables: diasLaborables
+                dias_laborables: diasLaborablesTrabajador
             });
         }
 
@@ -530,7 +680,7 @@ app.post('/api/admin/asistencias/manual', async (req, res) => {
             const [h, m] = empleado.hora_entrada.split(':');
             const horaLimite = new Date(`${fecha}T00:00:00`);
             horaLimite.setHours(parseInt(h), parseInt(m) + empleado.minutos_tolerancia, 0);
-            
+
             if (parsedEntrada > horaLimite) {
                 minutosTardanza = Math.floor((parsedEntrada - horaLimite) / 1000 / 60);
             }
@@ -575,19 +725,34 @@ app.get('/api/admin/planilla-periodo/:mesAno', async (req, res) => {
     try {
         // Obtenemos los trabajadores con sus contratos activos y su AFP/ONP correspondiente
         const result = await sql.query`
+            WITH SueldosPlanchadores AS (
+                SELECT 
+                    id_trabajador,
+                    SUM(cantidad * tarifa_por_saco) AS sueldo_calculado
+                FROM PLANCHADO
+                WHERE LEFT(CONVERT(VARCHAR, fecha, 23), 7) = ${mesAno}
+                GROUP BY id_trabajador
+            )
             SELECT 
                 (T.nombres + ' ' + T.apellidos) AS nombre,
+                C.nombre_cargo AS cargo,
                 R.nombre AS regimen,
-                CO.remuneracion_pactada AS sueldo,
+                CASE WHEN C.nombre_cargo = 'Planchador' THEN
+                    ISNULL(MAX(SP.sueldo_calculado), 0.00)
+                ELSE
+                    CO.remuneracion_pactada
+                END AS sueldo,
                 CASE WHEN T.asignacion_familiar = 1 THEN 102.50 ELSE 0.00 END AS asigFam,
                 ISNULL(SUM(DHE.monto_25 + DHE.monto_35 + DHE.monto_feriado), 0) AS hExtras,
                 R.tasa_aporte, R.tasa_comision, R.tasa_prima_seguro
             FROM TRABAJADORES T
+            INNER JOIN CARGOS C ON T.id_cargo = C.id_cargo
             INNER JOIN REGIMENES_PENSIONARIOS R ON T.id_regimen = R.id_regimen
             INNER JOIN CONTRATOS CO ON T.id_trabajador = CO.id_trabajador AND CO.estado = 'ACTIVO'
+            LEFT JOIN SueldosPlanchadores SP ON T.id_trabajador = SP.id_trabajador
             LEFT JOIN PLANILLAS P ON P.periodo_mes_ano = ${mesAno}
             LEFT JOIN DETALLE_HORAS_EXTRAS DHE ON T.id_trabajador = DHE.id_trabajador AND DHE.id_planilla = P.id_planilla
-            GROUP BY T.id_trabajador, T.nombres, T.apellidos, R.nombre, CO.remuneracion_pactada, T.asignacion_familiar, R.tasa_aporte, R.tasa_comision, R.tasa_prima_seguro
+            GROUP BY T.id_trabajador, T.nombres, T.apellidos, C.nombre_cargo, R.nombre, CO.remuneracion_pactada, T.asignacion_familiar, R.tasa_aporte, R.tasa_comision, R.tasa_prima_seguro
         `;
 
         // Calculamos las retenciones de ley peruana dinámicamente según tus tasas de la BD
@@ -673,7 +838,7 @@ app.put('/api/admin/trabajadores/:id/toggle-estado', async (req, res) => {
         }
         const currentEstado = currentRes.recordset[0].estado;
         const nuevoEstado = currentEstado === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-        
+
         await sql.query`UPDATE TRABAJADORES SET estado = ${nuevoEstado} WHERE id_trabajador = ${id}`;
         res.json({ success: true, message: `Trabajador marcado como ${nuevoEstado}.`, nuevoEstado });
     } catch (error) {

@@ -4,7 +4,7 @@ import axios from 'axios';
 function Personal() {
   const [trabajadores, setTrabajadores] = useState([]);
   const [busqueda, setBusqueda] = useState('');
-  
+
   // Estados para el modal y formulario
   const [showModal, setShowModal] = useState(false);
   const [cargos, setCargos] = useState([]);
@@ -15,6 +15,9 @@ function Personal() {
   const [idCargo, setIdCargo] = useState('1');
   const [sueldoBase, setSueldoBase] = useState('1025');
   const [asigFam, setAsigFam] = useState(false);
+
+  const cargoSeleccionado = cargos.find(c => c.id_cargo.toString() === idCargo);
+  const esPlanchador = cargoSeleccionado?.nombre_cargo === 'Planchador';
 
   const cargarTrabajadores = async () => {
     try {
@@ -49,7 +52,7 @@ function Personal() {
   }, []);
 
   // Filtrado en tiempo real por DNI o Nombre
-  const filtrados = trabajadores.filter(t => 
+  const filtrados = trabajadores.filter(t =>
     (t.nombres + ' ' + t.apellidos).toLowerCase().includes(busqueda.toLowerCase()) || t.dni.includes(busqueda)
   );
 
@@ -72,7 +75,7 @@ function Personal() {
         apellidos,
         pin,
         id_cargo: parseInt(idCargo),
-        sueldo_base: parseFloat(sueldoBase),
+        sueldo_base: esPlanchador ? 0.00 : parseFloat(sueldoBase),
         asignacion_familiar: asigFam
       });
       if (res.data.success) {
@@ -148,10 +151,10 @@ function Personal() {
 
       {/* Barra de Acciones */}
       <div className="barra-acciones-tabla">
-        <input 
-          type="text" 
-          className="buscador-entrada" 
-          placeholder="Buscar por nombre o DNI..." 
+        <input
+          type="text"
+          className="buscador-entrada"
+          placeholder="Buscar por nombre o DNI..."
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
         />
@@ -180,7 +183,12 @@ function Personal() {
               <td>{t.dni}</td>
               <td style={{ fontWeight: '600', color: 'var(--color-texto)' }}>{t.nombres} {t.apellidos}</td>
               <td><span className={`badge cargo-${t.cargo?.toLowerCase()}`}>{t.cargo}</span></td>
-              <td>S/. {parseFloat(t.sueldo_base || 1025).toFixed(2)}</td>
+              <td>
+                {t.cargo === 'Planchador'
+                  ? 'Destajo (Por saco)'
+                  : `S/. ${parseFloat(t.sueldo_base !== undefined && t.sueldo_base !== null ? t.sueldo_base : 1025).toFixed(2)}`
+                }
+              </td>
               <td>{t.regimen}</td>
               <td>
                 <span className={`badge ${t.estado === 'ACTIVO' ? 'estado-activo' : 'estado-ausente'}`}>
@@ -189,20 +197,20 @@ function Personal() {
               </td>
               <td>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button 
-                    className="btn-secundario" 
+                  <button
+                    className="btn-secundario"
                     style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 'bold' }}
                     onClick={() => handleToggleEstado(t.id_trabajador)}
                   >
                     {t.estado === 'ACTIVO' ? 'Deshabilitar' : 'Habilitar'}
                   </button>
-                  <button 
-                    style={{ 
-                      padding: '6px 10px', 
-                      fontSize: '11px', 
-                      backgroundColor: 'rgba(220, 38, 38, 0.15)', 
-                      color: '#dc2626', 
-                      border: '1px solid rgba(220, 38, 38, 0.3)', 
+                  <button
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: '11px',
+                      backgroundColor: 'rgba(220, 38, 38, 0.15)',
+                      color: '#dc2626',
+                      border: '1px solid rgba(220, 38, 38, 0.3)',
                       borderRadius: '6px',
                       cursor: 'pointer',
                       fontWeight: 'bold'
@@ -231,47 +239,47 @@ function Personal() {
                 <div className="grupo-formulario-fila">
                   <div className="grupo-formulario">
                     <label>DNI *</label>
-                    <input 
-                      type="text" 
-                      maxLength="8" 
-                      placeholder="Ingrese 8 dígitos" 
-                      value={dni} 
-                      onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))} 
-                      required 
+                    <input
+                      type="text"
+                      maxLength="8"
+                      placeholder="Ingrese 8 dígitos"
+                      value={dni}
+                      onChange={(e) => setDni(e.target.value.replace(/\D/g, ''))}
+                      required
                     />
                   </div>
                   <div className="grupo-formulario">
                     <label>PIN de Seguridad *</label>
-                    <input 
-                      type="password" 
-                      maxLength="6" 
-                      placeholder="PIN para marcar" 
-                      value={pin} 
-                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))} 
-                      required 
+                    <input
+                      type="password"
+                      maxLength="6"
+                      placeholder="PIN para marcar"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                      required
                     />
                   </div>
                 </div>
 
                 <div className="grupo-formulario">
                   <label>Nombres *</label>
-                  <input 
-                    type="text" 
-                    placeholder="Nombres del trabajador" 
-                    value={nombres} 
-                    onChange={(e) => setNombres(e.target.value)} 
-                    required 
+                  <input
+                    type="text"
+                    placeholder="Nombres del trabajador"
+                    value={nombres}
+                    onChange={(e) => setNombres(e.target.value)}
+                    required
                   />
                 </div>
 
                 <div className="grupo-formulario">
                   <label>Apellidos *</label>
-                  <input 
-                    type="text" 
-                    placeholder="Apellidos del trabajador" 
-                    value={apellidos} 
-                    onChange={(e) => setApellidos(e.target.value)} 
-                    required 
+                  <input
+                    type="text"
+                    placeholder="Apellidos del trabajador"
+                    value={apellidos}
+                    onChange={(e) => setApellidos(e.target.value)}
+                    required
                   />
                 </div>
 
@@ -286,23 +294,30 @@ function Personal() {
                   </div>
                   <div className="grupo-formulario">
                     <label>Sueldo Mensual Base *</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      step="0.01" 
-                      value={sueldoBase} 
-                      onChange={(e) => setSueldoBase(e.target.value)} 
-                      required 
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={esPlanchador ? '0' : sueldoBase}
+                      onChange={(e) => setSueldoBase(e.target.value)}
+                      disabled={esPlanchador}
+                      required={!esPlanchador}
+                      placeholder={esPlanchador ? 'No aplica (Cobro por saco)' : 'Ingrese sueldo base'}
                     />
+                    {esPlanchador && (
+                      <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', marginTop: '2px' }}>
+                        Los planchadores cobran por destajo (S/. 1.50 por saco planchado) y no tienen sueldo base.
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div className="grupo-formulario-checkbox">
-                  <input 
-                    type="checkbox" 
-                    id="asigFamCheck" 
-                    checked={asigFam} 
-                    onChange={(e) => setAsigFam(e.target.checked)} 
+                  <input
+                    type="checkbox"
+                    id="asigFamCheck"
+                    checked={asigFam}
+                    onChange={(e) => setAsigFam(e.target.checked)}
                   />
                   <label htmlFor="asigFamCheck">¿Tiene Asignación Familiar?</label>
                 </div>

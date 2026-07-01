@@ -64,8 +64,8 @@ function Planilla() {
           </div>
           <div className="selector-frecuencia" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <label style={{ fontSize: '13px', color: '#64748b' }}>Frecuencia de Pago:</label>
-            <select 
-              value={frecuencia} 
+            <select
+              value={frecuencia}
               onChange={(e) => setFrecuencia(e.target.value)}
               style={{
                 padding: '8px 12px',
@@ -122,6 +122,7 @@ function Planilla() {
         </thead>
         <tbody>
           {datosPlanilla.map((p, idx) => {
+            const infoTrab = trabajadores.find(t => (t.nombres + ' ' + t.apellidos) === p.nombre);
             const empSueldo = p.sueldo / factor;
             const empAsigFam = p.asigFam / factor;
             const empHExtras = p.hExtras / factor;
@@ -133,9 +134,16 @@ function Planilla() {
               <tr key={idx}>
                 <td>
                   <div style={{ fontWeight: 'bold', color: 'var(--color-texto)' }}>{p.nombre}</div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{p.regimen}</div>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>
+                    {infoTrab?.cargo === 'Planchador' ? 'Planchador (Destajo)' : infoTrab?.cargo || 'Operario'} • {p.regimen}
+                  </div>
                 </td>
-                <td>S/. {empSueldo.toFixed(2)}</td>
+                <td>
+                  {infoTrab?.cargo === 'Planchador'
+                    ? `S/. ${empSueldo.toFixed(2)} (Destajo)`
+                    : `S/. ${empSueldo.toFixed(2)}`
+                  }
+                </td>
                 <td>S/. {empAsigFam.toFixed(2)}</td>
                 <td>S/. {empHExtras.toFixed(2)}</td>
                 <td style={{ fontWeight: '600' }}>S/. {empBruto.toFixed(2)}</td>
@@ -166,7 +174,7 @@ function Planilla() {
         const empBruto = empSueldo + empAsigFam + empHExtras;
         const empRetencion = Math.abs(selectedBoleta.retenciones / factor);
         const empNeto = selectedBoleta.neto / factor;
-        
+
         return (
           <div className="modal-overlay">
             <div className="modal-contenedor" style={{ width: '600px' }}>
@@ -207,7 +215,12 @@ function Planilla() {
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ padding: '4px 0' }}>Sueldo Base pactado</td>
+                        <td style={{ padding: '4px 0' }}>
+                          {infoTrab?.cargo === 'Planchador'
+                            ? 'Pago por destajo (Producción)'
+                            : 'Sueldo Base pactado'
+                          }
+                        </td>
                         <td style={{ textAlign: 'right', padding: '4px 0' }}>S/. {empSueldo.toFixed(2)}</td>
                         <td style={{ textAlign: 'right', padding: '4px 0' }}>—</td>
                       </tr>
@@ -264,7 +277,7 @@ function Planilla() {
                 <button type="button" className="btn-guardar" onClick={() => {
                   const printContent = document.getElementById('boleta-impresion').innerHTML;
                   const originalContent = document.body.innerHTML;
-                  
+
                   // Crear una ventana o elemento temporal para imprimir de manera limpia
                   const win = window.open('', '', 'height=600,width=800');
                   win.document.write('<html><head><title>Imprimir Boleta - AvenroTex</title>');

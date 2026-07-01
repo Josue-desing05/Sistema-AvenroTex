@@ -4,12 +4,13 @@ import Asistencia from './components/Asistencia';
 import Planilla from './components/Planilla';
 import Vacaciones from './components/Vacaciones';
 import ConsolidadoAsistencia from './components/ConsolidadoAsistencia';
+import Produccion from './components/Produccion';
 
 function AdminPanel() {
   const [isLogged, setIsLogged] = useState(false);
-  const [pestana, setPestana] = useState('personal'); // personal, asistencia, planilla, vacaciones, consolidado
+  const [pestana, setPestana] = useState('personal'); // personal, asistencia, planilla, vacaciones, consolidado, produccion
   const [temaOscuro, setTemaOscuro] = useState(false);
-  
+
   const [correo, setCorreo] = useState('admin@avenrotex.com');
   const [password, setPassword] = useState('123456');
 
@@ -19,14 +20,13 @@ function AdminPanel() {
       <div className="fondo-login-admin">
         <div className="tarjeta-login-admin">
           <div className="logo-placeholder-cuadrado"></div>
-          <h2>AvenroTex S.A.C.</h2>
-          <p className="subtitulo-login">Panel de administración • Sistema de Planilla</p>
-          
+          <h2>Panel de administración • Sistema de Planilla</h2>
+
           <div className="grupo-login-input">
             <label>Usuario o Correo</label>
             <input type="text" value={correo} onChange={(e) => setCorreo(e.target.value)} />
           </div>
-          
+
           <div className="grupo-login-input">
             <label>Contraseña</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -48,12 +48,11 @@ function AdminPanel() {
         <div className="bloque-marca-izq">
           <div className="mini-logo-naranja"></div>
           <div>
-            <h3>AvenroTex S.A.C.</h3>
             <span>Sistema Web de Planilla</span>
           </div>
         </div>
         <div className="bloque-usuario-der">
-          <button 
+          <button
             onClick={() => setTemaOscuro(!temaOscuro)}
             style={{
               padding: '6px 12px',
@@ -79,6 +78,7 @@ function AdminPanel() {
         <button className={pestana === 'personal' ? 'activo' : ''} onClick={() => setPestana('personal')}>Personal</button>
         <button className={pestana === 'asistencia' ? 'activo' : ''} onClick={() => setPestana('asistencia')}>Asistencia</button>
         <button className={pestana === 'planilla' ? 'activo' : ''} onClick={() => setPestana('planilla')}>Planilla</button>
+        <button className={pestana === 'produccion' ? 'activo' : ''} onClick={() => setPestana('produccion')}>Producción</button>
         <button className={pestana === 'vacaciones' ? 'activo' : ''} onClick={() => setPestana('vacaciones')}>Vacaciones</button>
         <button className={pestana === 'consolidado' ? 'activo' : ''} onClick={() => setPestana('consolidado')}>Consolidado</button>
       </nav>
@@ -88,6 +88,7 @@ function AdminPanel() {
         {pestana === 'personal' && <Personal />}
         {pestana === 'asistencia' && <Asistencia />}
         {pestana === 'planilla' && <Planilla />}
+        {pestana === 'produccion' && <Produccion />}
         {pestana === 'vacaciones' && <Vacaciones />}
         {pestana === 'consolidado' && <ConsolidadoAsistencia />}
       </main>
