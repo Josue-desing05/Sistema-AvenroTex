@@ -61,7 +61,7 @@ function Vacaciones() {
       if (res.data.success) {
         alert("¡Vacaciones programadas exitosamente!");
         setShowModal(false);
-        await cargarVacaciones();
+        await cargarVacaciones(); 
       }
     } catch (err) {
       alert("Error al programar vacaciones: " + (err.response?.data?.error || err.message));

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import axios from 'axios';
+import logo from './assets/logo.png';
 import './App.css';
 
 function App() {
@@ -68,7 +69,8 @@ function App() {
   return (
     <div className="seccion-cliente">
       <div className="interfaz-taller client-mode">
-        <header className="banner-taller">
+        <header className="banner-taller" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+          <img src={logo} alt="AvenroTex Logo" style={{ height: '70px', objectFit: 'contain' }} />
           <h1>SISTEMA DE CONTROL DE ASISTENCIA</h1>
         </header>
 

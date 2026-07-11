@@ -1,8 +1,8 @@
 :root {
-  --color-fondo: #f1f5f9;
+  --color-fondo: #f0f3f8;
   --color-panel: #ffffff;
-  --color-primario: #2563eb;
-  --color-primario-hover: #1d4ed8;
+  --color-primario: #54668E;
+  --color-primario-hover: #3f4e70;
   --color-error: #dc2626;
   --color-exito: #16a34a;
   --color-texto: #0f172a;
@@ -263,7 +263,7 @@ body {
 .tarjeta-tabla h3 {
   margin-top: 0;
   font-size: 16px;
-  color: #2563eb;
+  color: var(--color-primario);
   margin-bottom: 15px;
 }
 
@@ -346,9 +346,9 @@ body {
 
 /* Paleta de Colores de AvenroTex de las imágenes - TEMA CLARO */
 :root {
-  --bg-sistema: #f1f5f9;
+  --bg-sistema: #f0f3f8;
   --bg-paneles: #ffffff;
-  --azul-boton: #2563eb;
+  --azul-boton: #54668E;
   --texto-atenuado: #64748b;
   --border-color: #cbd5e1;
 }
@@ -437,7 +437,7 @@ body {
 }
 
 .menu-pestanas-admin button.activo {
-  color: #3b82f6;
+  color: #54668E;
   font-weight: bold;
 }
 
@@ -448,7 +448,7 @@ body {
   left: 0;
   width: 100%;
   height: 2px;
-  background-color: #3b82f6;
+  background-color: #54668E;
 }
 
 /* Panel de Contenido */
@@ -629,7 +629,7 @@ body {
 }
 
 .btn-primario-azul:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-primario-hover);
 }
 
 .btn-secundario {
@@ -715,7 +715,7 @@ body {
 }
 
 .btn-login-ingresar:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-primario-hover);
 }
 
 /* Cargo remallador badge style */
@@ -807,7 +807,7 @@ body {
 }
 
 .btn-guardar:hover {
-  background-color: #1d4ed8;
+  background-color: var(--color-primario-hover);
 }
 
 .btn-cancelar {
@@ -914,7 +914,7 @@ body {
 
 /* Wrapper del Cliente de Asistencia (Tablet) */
 .seccion-cliente {
-  background-color: #0b111e;
+  background-color: #1e2430;
   min-height: 100vh;
   width: 100%;
   display: flex;
@@ -926,9 +926,9 @@ body {
 
 /* Scoping del Marcador de Asistencia */
 .interfaz-taller.client-mode {
-  background-color: #151f32;
+  background-color: #2b3547;
   color: #f1f5f9;
-  border: 1px solid #1e293b;
+  border: 1px solid #3e4c66;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
   max-width: 900px;
   width: 100%;
@@ -939,7 +939,7 @@ body {
 }
 
 .client-mode .banner-taller {
-  border-bottom: 2px solid #1e293b;
+  border-bottom: 2px solid #3e4c66;
   text-align: center;
   padding-bottom: 20px;
   margin-bottom: 25px;
@@ -965,12 +965,12 @@ body {
 }
 
 .client-mode .campo-digitos {
-  background-color: #0b111e;
-  border: 2px solid #1e293b;
+  background-color: #1e2430;
+  border: 2px solid #3e4c66;
 }
 
 .client-mode .campo-digitos.enfocado {
-  border-color: #2563eb;
+  border-color: #7385ac;
 }
 
 .client-mode .caja-vacia {
@@ -978,22 +978,22 @@ body {
 }
 
 .client-mode .grilla-num-pad button {
-  background-color: #1e293b;
+  background-color: #343f54;
   color: #ffffff;
-  border: 1px solid #334155;
+  border: 1px solid #4a5975;
 }
 
 .client-mode .grilla-num-pad button:hover {
-  background-color: #273549;
+  background-color: #3e4c66;
 }
 
 .client-mode .grilla-num-pad button:active {
-  background-color: #2563eb;
+  background-color: #54668E;
   color: white;
 }
 
 .client-mode .grilla-num-pad .btn-util {
-  background-color: #475569;
+  background-color: #4e5c78;
   color: #ffffff;
 }
 
@@ -1002,7 +1002,7 @@ body {
 }
 
 .client-mode .tarjeta-bienvenida span {
-  color: #60a5fa;
+  color: #8ea3cc;
 }
 
 .client-mode .btn-cancelar-operacion {
@@ -1033,11 +1033,14 @@ body {
 
 /* Sobreescritura de Tema Oscuro para el Administrador */
 .dark-mode {
-  --bg-sistema: #0b111e;
-  --bg-paneles: #151f32;
+  --bg-sistema: #161b26;
+  --bg-paneles: #222938;
   --texto-atenuado: #94a3b8;
-  --border-color: #1e293b;
+  --border-color: #2d384e;
   --color-texto: #f8fafc;
+  --color-primario: #7385ac;
+  --color-primario-hover: #54668E;
+  --azul-boton: #7385ac;
 }
 
 .dark-mode.layout-oficina-global {
@@ -1054,13 +1057,13 @@ body {
 }
 
 .dark-mode .btn-salir-sistema {
-  background-color: #1e293b;
+  background-color: #2d384e;
   color: #ffffff;
   border-color: var(--border-color);
 }
 
 .dark-mode .btn-salir-sistema:hover {
-  background-color: #334155;
+  background-color: #3d4b66;
 }
 
 .dark-mode .menu-pestanas-admin {
@@ -1073,7 +1076,7 @@ body {
 }
 
 .dark-mode .menu-pestanas-admin button.activo {
-  color: #3b82f6;
+  color: #7385ac;
 }
 
 .dark-mode .tarjeta-kpi {
@@ -1086,13 +1089,13 @@ body {
 }
 
 .dark-mode .sub-navegacion button {
-  background-color: #1e293b;
+  background-color: #2d384e;
   color: #cbd5e1;
   border: none;
 }
 
 .dark-mode .sub-navegacion button.activo {
-  background-color: #2563eb;
+  background-color: #7385ac;
   color: white;
 }
 
@@ -1257,4 +1260,141 @@ input[type="month"]:focus {
 .dark-mode .badge.cargo-planchador {
   background-color: rgba(16, 185, 129, 0.25);
   color: #34d399;
+}
+
+/* Dashboard de Reportes */
+.reporte-dashboard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.reporte-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .reporte-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reporte-grafico-card {
+  background-color: var(--bg-paneles);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.reporte-grafico-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.reporte-grafico-card.completo {
+  grid-column: span 2;
+}
+
+@media (max-width: 1024px) {
+  .reporte-grafico-card.completo {
+    grid-column: span 1;
+  }
+}
+
+.reporte-grafico-card h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 15px;
+  color: var(--color-texto);
+  font-weight: 700;
+  align-self: flex-start;
+  border-left: 4px solid var(--color-primario);
+  padding-left: 10px;
+}
+
+.reporte-grafico-content {
+  width: 100%;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+/* Tooltips e interactividad */
+.grafico-tooltip {
+  position: absolute;
+  background-color: rgba(15, 23, 42, 0.9);
+  color: #ffffff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  pointer-events: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  transition: opacity 0.15s ease;
+}
+
+.grafico-leyenda {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 15px;
+  width: 100%;
+}
+
+.leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--texto-atenuado);
+}
+
+.leyenda-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+/* SVG Chart elements */
+.chart-bar {
+  cursor: pointer;
+  transition: fill 0.2s ease, opacity 0.2s ease;
+}
+
+.chart-bar:hover {
+  opacity: 0.85;
+}
+
+.chart-pie-slice {
+  cursor: pointer;
+  transition: opacity 0.2s ease, stroke-width 0.2s ease;
+}
+
+.chart-pie-slice:hover {
+  opacity: 0.85;
+  stroke: var(--bg-paneles);
+  stroke-width: 2px;
+}
+
+.chart-line-point {
+  cursor: pointer;
+  transition: r 0.2s ease, fill 0.2s ease;
+}
+
+.chart-line-point:hover {
+  r: 6px;
+  fill: #ffffff;
+  stroke-width: 3px;
 }

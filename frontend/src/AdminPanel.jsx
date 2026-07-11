@@ -3,12 +3,13 @@ import Personal from './components/Personal';
 import Asistencia from './components/Asistencia';
 import Planilla from './components/Planilla';
 import Vacaciones from './components/Vacaciones';
-import ConsolidadoAsistencia from './components/ConsolidadoAsistencia';
+import Reporte from './components/Reporte';
 import Produccion from './components/Produccion';
+import logo from './assets/logo.png';
 
 function AdminPanel() {
   const [isLogged, setIsLogged] = useState(false);
-  const [pestana, setPestana] = useState('personal'); // personal, asistencia, planilla, vacaciones, consolidado, produccion
+  const [pestana, setPestana] = useState('personal'); // personal, asistencia, planilla, vacaciones, reporte, produccion
   const [temaOscuro, setTemaOscuro] = useState(false);
 
   const [correo, setCorreo] = useState('admin@avenrotex.com');
@@ -19,7 +20,7 @@ function AdminPanel() {
     return (
       <div className="fondo-login-admin">
         <div className="tarjeta-login-admin">
-          <div className="logo-placeholder-cuadrado"></div>
+          <img src={logo} alt="AvenroTex Logo" style={{ height: '70px', objectFit: 'contain', marginBottom: '20px' }} />
           <h2>Panel de administración • Sistema de Planilla</h2>
 
           <div className="grupo-login-input">
@@ -46,7 +47,7 @@ function AdminPanel() {
       {/* Header Superior de AvenroTex */}
       <header className="header-oficina-top">
         <div className="bloque-marca-izq">
-          <div className="mini-logo-naranja"></div>
+          <img src={logo} alt="AvenroTex logo" style={{ height: '32px', objectFit: 'contain' }} />
           <div>
             <span>Sistema Web de Planilla</span>
           </div>
@@ -80,7 +81,7 @@ function AdminPanel() {
         <button className={pestana === 'planilla' ? 'activo' : ''} onClick={() => setPestana('planilla')}>Planilla</button>
         <button className={pestana === 'produccion' ? 'activo' : ''} onClick={() => setPestana('produccion')}>Producción</button>
         <button className={pestana === 'vacaciones' ? 'activo' : ''} onClick={() => setPestana('vacaciones')}>Vacaciones</button>
-        <button className={pestana === 'consolidado' ? 'activo' : ''} onClick={() => setPestana('consolidado')}>Consolidado</button>
+        <button className={pestana === 'reporte' ? 'activo' : ''} onClick={() => setPestana('reporte')}>Reporte</button>
       </nav>
 
       {/* Renderizado de Componentes Dinámicos */}
@@ -90,7 +91,7 @@ function AdminPanel() {
         {pestana === 'planilla' && <Planilla />}
         {pestana === 'produccion' && <Produccion />}
         {pestana === 'vacaciones' && <Vacaciones />}
-        {pestana === 'consolidado' && <ConsolidadoAsistencia />}
+        {pestana === 'reporte' && <Reporte />}
       </main>
     </div>
   );
