@@ -15,7 +15,7 @@ function App() {
     if (campoActivo === 'dni') {
       if (dni.length < 8) setDni(dni + num);
     } else {
-      if (pin.length < 4) setPin(pin + num);
+      if (pin.length < 8) setPin(pin + num);
     }
   };
 
@@ -33,8 +33,8 @@ function App() {
 
   const procesarLogin = async () => {
     setMensajeError(null);
-    if (dni.length !== 8 || pin.length !== 4) {
-      setMensajeError('DNI debe tener 8 dígitos y PIN 4 dígitos.');
+    if (dni.length !== 8 || pin.length !== 8) {
+      setMensajeError('DNI debe tener 8 dígitos y PIN 8 dígitos.');
       return;
     }
     try {
@@ -50,6 +50,23 @@ function App() {
 
   const ejecutarMarcado = async (tipo) => {
     setMensajeError(null);
+
+    // Validar si es SALIDA y aún no es la hora indicada
+    if (tipo === 'SALIDA') {
+      if (trabajadorLogueado?.hora_salida) {
+        const ahora = new Date();
+        const [h, m] = trabajadorLogueado.hora_salida.split(':');
+        const horaLimite = new Date();
+        horaLimite.setHours(parseInt(h), parseInt(m), 0, 0);
+
+        if (ahora < horaLimite) {
+          const horaFormateada = trabajadorLogueado.hora_salida.slice(0, 5);
+          alert(`No puedes marcar salida antes de la hora indicada (${horaFormateada}).`);
+          return;
+        }
+      }
+    }
+
     try {
       const res = await axios.post('http://127.0.0.1:3000/api/asistencias/registrar-marca', {
         id_trabajador: trabajadorLogueado.id_trabajador,
@@ -83,7 +100,7 @@ function App() {
               </div>
               <div className={`campo-digitos ${campoActivo === 'pin' ? 'enfocado' : ''}`} onClick={() => setCampoActivo('pin')}>
                 <span>PIN DE SEGURIDAD</span>
-                <div className="caja-vacia">{pin ? '*'.repeat(pin.length) : '____'}</div>
+                <div className="caja-vacia">{pin ? '*'.repeat(pin.length) : '________'}</div>
               </div>
               <button className="boton-accion btn-ingresar" onClick={procesarLogin}>INGRESAR AL PANEL</button>
               {mensajeError && <div className="banner-error">{mensajeError}</div>}
@@ -106,10 +123,18 @@ function App() {
               <p>Selecciona la acción de tareo que vas a realizar en este momento:</p>
             </div>
             <div className="menu-botones-gigantes">
-              <button className="boton-seleccion btn-entrada" onClick={() => ejecutarMarcado('ENTRADA')}>MARCAR ENTRADA</button>
-              <button className="boton-seleccion btn-salida-ref" onClick={() => ejecutarMarcado('SALIDA_REFRIGERIO')}>SALIR A ALMUERZO</button>
-              <button className="boton-seleccion btn-entrada-ref" onClick={() => ejecutarMarcado('ENTRADA_REFRIGERIO')}>RETORNO ALMUERZO</button>
-              <button className="boton-seleccion btn-salida" onClick={() => ejecutarMarcado('SALIDA')}>MARCAR SALIDA</button>
+              <button className="boton-seleccion btn-entrada" onClick={() => ejecutarMarcado('ENTRADA')}>
+                MARCAR ENTRADA {trabajadorLogueado?.hora_entrada ? `(${trabajadorLogueado.hora_entrada.slice(0, 5)})` : ''}
+              </button>
+              <button className="boton-seleccion btn-salida-ref" onClick={() => ejecutarMarcado('SALIDA_REFRIGERIO')}>
+                SALIR A ALMUERZO {trabajadorLogueado?.inicio_refrigerio ? `(${trabajadorLogueado.inicio_refrigerio.slice(0, 5)})` : ''}
+              </button>
+              <button className="boton-seleccion btn-entrada-ref" onClick={() => ejecutarMarcado('ENTRADA_REFRIGERIO')}>
+                RETORNO ALMUERZO {trabajadorLogueado?.fin_refrigerio ? `(${trabajadorLogueado.fin_refrigerio.slice(0, 5)})` : ''}
+              </button>
+              <button className="boton-seleccion btn-salida" onClick={() => ejecutarMarcado('SALIDA')}>
+                MARCAR SALIDA {trabajadorLogueado?.hora_salida ? `(${trabajadorLogueado.hora_salida.slice(0, 5)})` : ''}
+              </button>
             </div>
             {mensajeError && <div className="banner-error">{mensajeError}</div>}
             <button className="btn-cancelar-operacion" onClick={() => { setPaso(1); limpiarCampos(); }}>◀ Cancelar / Volver</button>

@@ -287,7 +287,7 @@ function Reporte() {
 
     const radius = 55;
     const circ = 2 * Math.PI * radius;
-    let accumulatedAngle = 0;
+    let accumulatedLength = 0;
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
@@ -297,8 +297,8 @@ function Reporte() {
             {segments.map((seg, i) => {
               const pct = seg.value / total;
               const strokeLength = pct * circ;
-              const strokeOffset = circ - strokeLength + accumulatedAngle;
-              accumulatedAngle -= strokeLength;
+              const strokeOffset = -accumulatedLength;
+              accumulatedLength += strokeLength;
 
               return (
                 <circle
@@ -309,7 +309,7 @@ function Reporte() {
                   fill="none"
                   stroke={seg.color}
                   strokeWidth="20"
-                  strokeDasharray={circ}
+                  strokeDasharray={`${strokeLength} ${circ}`}
                   strokeDashoffset={strokeOffset}
                   transform="rotate(-90)"
                   className="chart-pie-slice"

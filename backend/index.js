@@ -41,6 +41,9 @@ app.post('/api/asistencias/verificar-trabajador', async (req, res) => {
         const result = await sql.query`
             SELECT T.id_trabajador, T.nombres, T.apellidos, 
                    CONVERT(VARCHAR, H.hora_entrada, 108) as hora_entrada, 
+                   CONVERT(VARCHAR, H.inicio_refrigerio, 108) as inicio_refrigerio, 
+                   CONVERT(VARCHAR, H.fin_refrigerio, 108) as fin_refrigerio, 
+                   CONVERT(VARCHAR, H.hora_salida, 108) as hora_salida, 
                    H.minutos_tolerancia
             FROM TRABAJADORES T
             INNER JOIN HORARIOS H ON T.id_horario = H.id_horario
@@ -152,6 +155,29 @@ app.post('/api/asistencias/registrar-marca', async (req, res) => {
             if (asistencia.hora_salida) {
                 return res.status(400).json({ error: 'Ya registraste tu SALIDA final de la jornada.' });
             }
+
+            // Obtener la hora de salida configurada en su horario
+            const datosHorario = await sql.query`
+                SELECT CONVERT(VARCHAR, H.hora_salida, 108) as hora_salida 
+                FROM TRABAJADORES T
+                INNER JOIN HORARIOS H ON T.id_horario = H.id_horario
+                WHERE T.id_trabajador = ${id_trabajador}
+            `;
+            if (datosHorario.recordset.length > 0) {
+                const empleado = datosHorario.recordset[0];
+                if (empleado.hora_salida) {
+                    const [h, m, s] = empleado.hora_salida.split(':');
+                    const horaLimiteSalida = new Date();
+                    horaLimiteSalida.setHours(parseInt(h), parseInt(m), parseInt(s || 0), 0);
+
+                    if (ahora < horaLimiteSalida) {
+                        return res.status(400).json({ 
+                            error: `No puedes marcar salida antes de la hora indicada (${empleado.hora_salida.slice(0, 5)}).` 
+                        });
+                    }
+                }
+            }
+
             await sql.query`
                 UPDATE ASISTENCIAS SET hora_salida = ${ahora} WHERE id_asistencia = ${asistencia.id_asistencia}
             `;
@@ -280,6 +306,9 @@ app.get('/api/admin/trabajadores-lista', async (req, res) => {
                 T.dni,
                 T.nombres,
                 T.apellidos,
+                RTRIM(T.pin_seguridad) AS pin_seguridad,
+                T.id_cargo,
+                T.asignacion_familiar,
                 C.nombre_cargo AS cargo,
                 R.nombre AS regimen,
                 CO.remuneracion_pactada AS sueldo_base,
@@ -732,6 +761,29 @@ app.get('/api/admin/planilla-periodo/:mesAno', async (req, res) => {
                 FROM PLANCHADO
                 WHERE LEFT(CONVERT(VARCHAR, fecha, 23), 7) = ${mesAno}
                 GROUP BY id_trabajador
+            ),
+            HorasExtrasCalculadas AS (
+                SELECT 
+                    A.id_trabajador,
+                    SUM(
+                        CASE 
+                            WHEN DATEDIFF(minute, H.hora_salida, CAST(A.hora_salida AS TIME)) > 0 
+                            THEN DATEDIFF(minute, H.hora_salida, CAST(A.hora_salida AS TIME)) / 60.0
+                            ELSE 0.00 
+                        END
+                    ) AS h_extras_cantidad,
+                    SUM(
+                        CASE 
+                            WHEN DATEDIFF(minute, H.hora_salida, CAST(A.hora_salida AS TIME)) > 0 
+                            THEN DATEDIFF(minute, H.hora_salida, CAST(A.hora_salida AS TIME)) / 60.0 * (1025.0 / 192.0)
+                            ELSE 0.00 
+                        END
+                    ) AS h_extras_calculadas
+                FROM ASISTENCIAS A
+                INNER JOIN TRABAJADORES T ON A.id_trabajador = T.id_trabajador
+                INNER JOIN HORARIOS H ON T.id_horario = H.id_horario
+                WHERE LEFT(CONVERT(VARCHAR, A.fecha, 23), 7) = ${mesAno} AND A.hora_salida IS NOT NULL
+                GROUP BY A.id_trabajador
             )
             SELECT 
                 (T.nombres + ' ' + T.apellidos) AS nombre,
@@ -743,15 +795,15 @@ app.get('/api/admin/planilla-periodo/:mesAno', async (req, res) => {
                     CO.remuneracion_pactada
                 END AS sueldo,
                 CASE WHEN T.asignacion_familiar = 1 THEN 102.50 ELSE 0.00 END AS asigFam,
-                ISNULL(SUM(DHE.monto_25 + DHE.monto_35 + DHE.monto_feriado), 0) AS hExtras,
+                ISNULL(MAX(HEC.h_extras_cantidad), 0.00) AS hExtrasCant,
+                ISNULL(MAX(HEC.h_extras_calculadas), 0.00) AS hExtras,
                 R.tasa_aporte, R.tasa_comision, R.tasa_prima_seguro
             FROM TRABAJADORES T
             INNER JOIN CARGOS C ON T.id_cargo = C.id_cargo
             INNER JOIN REGIMENES_PENSIONARIOS R ON T.id_regimen = R.id_regimen
             INNER JOIN CONTRATOS CO ON T.id_trabajador = CO.id_trabajador AND CO.estado = 'ACTIVO'
             LEFT JOIN SueldosPlanchadores SP ON T.id_trabajador = SP.id_trabajador
-            LEFT JOIN PLANILLAS P ON P.periodo_mes_ano = ${mesAno}
-            LEFT JOIN DETALLE_HORAS_EXTRAS DHE ON T.id_trabajador = DHE.id_trabajador AND DHE.id_planilla = P.id_planilla
+            LEFT JOIN HorasExtrasCalculadas HEC ON T.id_trabajador = HEC.id_trabajador
             GROUP BY T.id_trabajador, T.nombres, T.apellidos, C.nombre_cargo, R.nombre, CO.remuneracion_pactada, T.asignacion_familiar, R.tasa_aporte, R.tasa_comision, R.tasa_prima_seguro
         `;
 
@@ -768,6 +820,7 @@ app.get('/api/admin/planilla-periodo/:mesAno', async (req, res) => {
                 sueldo: emp.sueldo,
                 asigFam: emp.asigFam,
                 hExtras: emp.hExtras,
+                hExtrasCant: emp.hExtrasCant,
                 retenciones: retenciones,
                 neto: neto
             };
@@ -862,6 +915,100 @@ app.delete('/api/admin/trabajadores/:id', async (req, res) => {
         res.json({ success: true, message: 'Trabajador y todo su historial eliminados correctamente.' });
     } catch (error) {
         res.status(500).json({ error: 'Error al eliminar trabajador: ' + error.message });
+    }
+});
+
+// =============================================================================
+// NUEVO ENDPOINT: OBTENER EL HORARIO GENERAL
+// =============================================================================
+app.get('/api/admin/horario', async (req, res) => {
+    try {
+        const result = await sql.query`
+            SELECT TOP 1
+                id_horario,
+                CONVERT(VARCHAR, hora_entrada, 108) as hora_entrada,
+                CONVERT(VARCHAR, inicio_refrigerio, 108) as inicio_refrigerio,
+                CONVERT(VARCHAR, fin_refrigerio, 108) as fin_refrigerio,
+                CONVERT(VARCHAR, hora_salida, 108) as hora_salida,
+                minutos_tolerancia
+            FROM HORARIOS
+            ORDER BY id_horario ASC
+        `;
+        res.json({ success: true, datos: result.recordset[0] });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al obtener el horario: ' + error.message });
+    }
+});
+
+// =============================================================================
+// NUEVO ENDPOINT: ACTUALIZAR EL HORARIO GENERAL
+// =============================================================================
+app.put('/api/admin/horario', async (req, res) => {
+    const { hora_entrada, inicio_refrigerio, fin_refrigerio, hora_salida, minutos_tolerancia } = req.body;
+    try {
+        await sql.query`
+            UPDATE HORARIOS
+            SET hora_entrada = ${hora_entrada},
+                inicio_refrigerio = ${inicio_refrigerio},
+                fin_refrigerio = ${fin_refrigerio},
+                hora_salida = ${hora_salida},
+                minutos_tolerancia = ${minutos_tolerancia}
+            WHERE id_horario = 1
+        `;
+        res.json({ success: true, message: '¡Horario general actualizado correctamente!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al actualizar el horario: ' + error.message });
+    }
+});
+
+// =============================================================================
+// NUEVO ENDPOINT: EDITAR DATOS DE TRABAJADOR
+// =============================================================================
+app.put('/api/admin/trabajadores/:id', async (req, res) => {
+    const { id } = req.params;
+    const { dni, nombres, apellidos, pin, id_cargo, sueldo_base, asignacion_familiar } = req.body;
+
+    if (!dni || !nombres || !apellidos || !pin) {
+        return res.status(400).json({ error: 'Todos los campos (DNI, Nombres, Apellidos, PIN) son obligatorios.' });
+    }
+
+    try {
+        // Verificar si el DNI ya pertenece a otro trabajador
+        const existe = await sql.query`SELECT 1 FROM TRABAJADORES WHERE dni = ${dni} AND id_trabajador <> ${id}`;
+        if (existe.recordset.length > 0) {
+            return res.status(400).json({ error: 'El DNI ingresado ya pertenece a otro trabajador.' });
+        }
+
+        const cargoId = id_cargo ? parseInt(id_cargo) : 1;
+        const asigFamVal = asignacion_familiar ? 1 : 0;
+
+        // Actualizar tabla TRABAJADORES
+        await sql.query`
+            UPDATE TRABAJADORES
+            SET dni = ${dni},
+                nombres = ${nombres},
+                apellidos = ${apellidos},
+                pin_seguridad = ${pin},
+                id_cargo = ${cargoId},
+                asignacion_familiar = ${asigFamVal}
+            WHERE id_trabajador = ${id}
+        `;
+
+        // Obtener el tipo de cargo para ver si es planchador
+        const cargoRes = await sql.query`SELECT nombre_cargo FROM CARGOS WHERE id_cargo = ${cargoId}`;
+        const esPlanchador = cargoRes.recordset[0]?.nombre_cargo === 'Planchador';
+        const remuneracion = esPlanchador ? 0.00 : ((sueldo_base !== undefined && sueldo_base !== null) ? parseFloat(sueldo_base) : 1025.00);
+
+        // Actualizar sueldo pactado en su contrato activo
+        await sql.query`
+            UPDATE CONTRATOS
+            SET remuneracion_pactada = ${remuneracion}
+            WHERE id_trabajador = ${id} AND estado = 'ACTIVO'
+        `;
+
+        res.json({ success: true, message: '¡Datos del trabajador y su contrato actualizados con éxito!' });
+    } catch (error) {
+        res.status(500).json({ error: 'Error al actualizar trabajador: ' + error.message });
     }
 });
 

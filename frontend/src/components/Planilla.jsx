@@ -81,7 +81,6 @@ function Planilla() {
             </select>
           </div>
         </div>
-        <button className="btn-primario-azul">Ejecutar Cierre {frecuencia === 'semanal' ? 'Semanal' : 'Mensual'}</button>
       </div>
 
       <div className="contenedor-kpis">
@@ -126,6 +125,7 @@ function Planilla() {
             const empSueldo = p.sueldo / factor;
             const empAsigFam = p.asigFam / factor;
             const empHExtras = p.hExtras / factor;
+            const empHExtrasCant = (p.hExtrasCant || 0) / factor;
             const empBruto = empSueldo + empAsigFam + empHExtras;
             const empRetencion = p.retenciones / factor;
             const empNeto = p.neto / factor;
@@ -145,7 +145,7 @@ function Planilla() {
                   }
                 </td>
                 <td>S/. {empAsigFam.toFixed(2)}</td>
-                <td>S/. {empHExtras.toFixed(2)}</td>
+                <td>S/. {empHExtras.toFixed(2)} ({empHExtrasCant.toFixed(2)} hrs)</td>
                 <td style={{ fontWeight: '600' }}>S/. {empBruto.toFixed(2)}</td>
                 <td style={{ color: '#ef4444' }}>S/. {empRetencion.toFixed(2)}</td>
                 <td style={{ color: '#16a34a', fontWeight: 'bold' }}>S/. {empNeto.toFixed(2)}</td>
@@ -171,6 +171,7 @@ function Planilla() {
         const empSueldo = selectedBoleta.sueldo / factor;
         const empAsigFam = selectedBoleta.asigFam / factor;
         const empHExtras = selectedBoleta.hExtras / factor;
+        const empHExtrasCant = (selectedBoleta.hExtrasCant || 0) / factor;
         const empBruto = empSueldo + empAsigFam + empHExtras;
         const empRetencion = Math.abs(selectedBoleta.retenciones / factor);
         const empNeto = selectedBoleta.neto / factor;
@@ -233,7 +234,7 @@ function Planilla() {
                       )}
                       {empHExtras > 0 && (
                         <tr>
-                          <td style={{ padding: '4px 0' }}>Horas Extras calc.</td>
+                          <td style={{ padding: '4px 0' }}>Horas Extras calc. ({empHExtrasCant.toFixed(2)} hrs)</td>
                           <td style={{ textAlign: 'right', padding: '4px 0' }}>S/. {empHExtras.toFixed(2)}</td>
                           <td style={{ textAlign: 'right', padding: '4px 0' }}>—</td>
                         </tr>

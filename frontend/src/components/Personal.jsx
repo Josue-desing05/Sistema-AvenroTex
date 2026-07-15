@@ -16,6 +16,17 @@ function Personal() {
   const [sueldoBase, setSueldoBase] = useState('1025');
   const [asigFam, setAsigFam] = useState(false);
 
+  // Estados para modal de edición
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editId, setEditId] = useState(null);
+  const [editDni, setEditDni] = useState('');
+  const [editNombres, setEditNombres] = useState('');
+  const [editApellidos, setEditApellidos] = useState('');
+  const [editPin, setEditPin] = useState('');
+  const [editIdCargo, setEditIdCargo] = useState('1');
+  const [editSueldoBase, setEditSueldoBase] = useState('1025');
+  const [editAsigFam, setEditAsigFam] = useState(false);
+
   const cargoSeleccionado = cargos.find(c => c.id_cargo.toString() === idCargo);
   const esPlanchador = cargoSeleccionado?.nombre_cargo === 'Planchador';
 
@@ -68,6 +79,14 @@ function Personal() {
       alert("Por favor, complete todos los campos obligatorios (DNI, Nombres, Apellidos, PIN).");
       return;
     }
+    if (dni.length !== 8) {
+      alert("El DNI debe tener exactamente 8 dígitos.");
+      return;
+    }
+    if (pin.length !== 8) {
+      alert("El PIN debe tener exactamente 8 dígitos.");
+      return;
+    }
     try {
       const res = await axios.post('http://127.0.0.1:3000/api/admin/trabajadores', {
         dni,
@@ -94,6 +113,57 @@ function Personal() {
       }
     } catch (err) {
       alert("Error al registrar trabajador: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  const handleAbrirEditar = (t) => {
+    setEditId(t.id_trabajador);
+    setEditDni(t.dni.trim());
+    setEditNombres(t.nombres);
+    setEditApellidos(t.apellidos);
+    setEditPin(t.pin_seguridad || '');
+    const cargoObj = cargos.find(c => c.nombre_cargo === t.cargo);
+    setEditIdCargo(cargoObj ? cargoObj.id_cargo.toString() : '1');
+    setEditSueldoBase(t.sueldo_base !== null && t.sueldo_base !== undefined ? t.sueldo_base.toString() : '1025');
+    setEditAsigFam(!!t.asignacion_familiar);
+    setShowEditModal(true);
+  };
+
+  const handleEditar = async (e) => {
+    e.preventDefault();
+    if (!editDni || !editNombres || !editApellidos || !editPin) {
+      alert("Por favor, complete todos los campos obligatorios (DNI, Nombres, Apellidos, PIN).");
+      return;
+    }
+    if (editDni.length !== 8) {
+      alert("El DNI debe tener exactamente 8 dígitos.");
+      return;
+    }
+    if (editPin.length !== 8) {
+      alert("El PIN debe tener exactamente 8 dígitos.");
+      return;
+    }
+
+    const cargoSeleccionadoEdit = cargos.find(c => c.id_cargo.toString() === editIdCargo);
+    const esPlanchadorEdit = cargoSeleccionadoEdit?.nombre_cargo === 'Planchador';
+
+    try {
+      const res = await axios.put(`http://127.0.0.1:3000/api/admin/trabajadores/${editId}`, {
+        dni: editDni,
+        nombres: editNombres,
+        apellidos: editApellidos,
+        pin: editPin,
+        id_cargo: parseInt(editIdCargo),
+        sueldo_base: esPlanchadorEdit ? 0.00 : parseFloat(editSueldoBase),
+        asignacion_familiar: editAsigFam
+      });
+      if (res.data.success) {
+        alert("¡Trabajador actualizado exitosamente!");
+        setShowEditModal(false);
+        await cargarTrabajadores();
+      }
+    } catch (err) {
+      alert("Error al actualizar trabajador: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -199,6 +269,20 @@ function Personal() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button
                     className="btn-secundario"
+                    style={{ 
+                      padding: '6px 10px', 
+                      fontSize: '11px', 
+                      fontWeight: 'bold',
+                      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                      color: '#2563eb',
+                      border: '1px solid rgba(59, 130, 246, 0.3)'
+                    }}
+                    onClick={() => handleAbrirEditar(t)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn-secundario"
                     style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 'bold' }}
                     onClick={() => handleToggleEstado(t.id_trabajador)}
                   >
@@ -252,8 +336,8 @@ function Personal() {
                     <label>PIN de Seguridad *</label>
                     <input
                       type="password"
-                      maxLength="6"
-                      placeholder="PIN para marcar"
+                      maxLength="8"
+                      placeholder="PIN de 8 dígitos"
                       value={pin}
                       onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
                       required
@@ -325,6 +409,111 @@ function Personal() {
               <div className="modal-pie">
                 <button type="button" className="btn-cancelar" onClick={() => setShowModal(false)}>Cancelar</button>
                 <button type="submit" className="btn-guardar">Guardar Trabajador</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edición de Trabajador */}
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal-contenedor">
+            <div className="modal-cabecera">
+              <h3>Editar Trabajador</h3>
+              <button className="btn-cerrar-modal" onClick={() => setShowEditModal(false)}>&times;</button>
+            </div>
+            <form onSubmit={handleEditar}>
+              <div className="modal-cuerpo">
+                <div className="grupo-formulario-fila">
+                  <div className="grupo-formulario">
+                    <label>DNI *</label>
+                    <input
+                      type="text"
+                      maxLength="8"
+                      placeholder="Ingrese 8 dígitos"
+                      value={editDni}
+                      onChange={(e) => setEditDni(e.target.value.replace(/\D/g, ''))}
+                      required
+                    />
+                  </div>
+                  <div className="grupo-formulario">
+                    <label>PIN de Seguridad *</label>
+                    <input
+                      type="password"
+                      maxLength="8"
+                      placeholder="PIN de 8 dígitos"
+                      value={editPin}
+                      onChange={(e) => setEditPin(e.target.value.replace(/\D/g, ''))}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grupo-formulario">
+                  <label>Nombres *</label>
+                  <input
+                    type="text"
+                    placeholder="Nombres del trabajador"
+                    value={editNombres}
+                    onChange={(e) => setEditNombres(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="grupo-formulario">
+                  <label>Apellidos *</label>
+                  <input
+                    type="text"
+                    placeholder="Apellidos del trabajador"
+                    value={editApellidos}
+                    onChange={(e) => setEditApellidos(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="grupo-formulario-fila">
+                  <div className="grupo-formulario">
+                    <label>Cargo / Rol *</label>
+                    <select value={editIdCargo} onChange={(e) => setEditIdCargo(e.target.value)} required>
+                      {cargos.map(c => (
+                        <option key={c.id_cargo} value={c.id_cargo}>{c.nombre_cargo}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grupo-formulario">
+                    <label>Sueldo Mensual Base *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={cargos.find(c => c.id_cargo.toString() === editIdCargo)?.nombre_cargo === 'Planchador' ? '0' : editSueldoBase}
+                      onChange={(e) => setEditSueldoBase(e.target.value)}
+                      disabled={cargos.find(c => c.id_cargo.toString() === editIdCargo)?.nombre_cargo === 'Planchador'}
+                      required={cargos.find(c => c.id_cargo.toString() === editIdCargo)?.nombre_cargo !== 'Planchador'}
+                      placeholder={cargos.find(c => c.id_cargo.toString() === editIdCargo)?.nombre_cargo === 'Planchador' ? 'No aplica (Cobro por saco)' : 'Ingrese sueldo base'}
+                    />
+                    {cargos.find(c => c.id_cargo.toString() === editIdCargo)?.nombre_cargo === 'Planchador' && (
+                      <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', marginTop: '2px' }}>
+                        Los planchadores cobran por destajo (S/. 1.50 por saco planchado) y no tienen sueldo base.
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grupo-formulario-checkbox">
+                  <input
+                    type="checkbox"
+                    id="editAsigFamCheck"
+                    checked={editAsigFam}
+                    onChange={(e) => setEditAsigFam(e.target.checked)}
+                  />
+                  <label htmlFor="editAsigFamCheck">¿Tiene Asignación Familiar?</label>
+                </div>
+              </div>
+              <div className="modal-pie">
+                <button type="button" className="btn-cancelar" onClick={() => setShowEditModal(false)}>Cancelar</button>
+                <button type="submit" className="btn-guardar">Actualizar Trabajador</button>
               </div>
             </form>
           </div>

@@ -28,6 +28,13 @@ function Asistencia() {
   const [mRetornoAlm, setMRetornoAlm] = useState('');
   const [mSalida, setMSalida] = useState('17:00');
 
+  // Estados para horario general
+  const [hEntrada, setHEntrada] = useState('08:00');
+  const [hSalidaAlm, setHSalidaAlm] = useState('13:00');
+  const [hRetornoAlm, setHRetornoAlm] = useState('14:00');
+  const [hSalida, setHSalida] = useState('17:00');
+  const [hTolerancia, setHTolerancia] = useState(10);
+
   const cargarAsistenciasHoy = async () => {
     try {
       const res = await axios.get('http://127.0.0.1:3000/api/admin/asistencias-hoy');
@@ -70,12 +77,47 @@ function Asistencia() {
     }
   };
 
+  const cargarHorarioGeneral = async () => {
+    try {
+      const res = await axios.get('http://127.0.0.1:3000/api/admin/horario');
+      if (res.data.success && res.data.datos) {
+        const d = res.data.datos;
+        setHEntrada(d.hora_entrada ? d.hora_entrada.slice(0, 5) : '08:00');
+        setHSalidaAlm(d.inicio_refrigerio ? d.inicio_refrigerio.slice(0, 5) : '13:00');
+        setHRetornoAlm(d.fin_refrigerio ? d.fin_refrigerio.slice(0, 5) : '14:00');
+        setHSalida(d.hora_salida ? d.hora_salida.slice(0, 5) : '17:00');
+        setHTolerancia(d.minutos_tolerancia !== null ? d.minutos_tolerancia : 10);
+      }
+    } catch (err) {
+      console.error("Error al cargar horario general:", err);
+    }
+  };
+
+  const handleGuardarHorario = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.put('http://127.0.0.1:3000/api/admin/horario', {
+        hora_entrada: hEntrada,
+        inicio_refrigerio: hSalidaAlm,
+        fin_refrigerio: hRetornoAlm,
+        hora_salida: hSalida,
+        minutos_tolerancia: parseInt(hTolerancia)
+      });
+      if (res.data.success) {
+        alert("¡Horario general actualizado y guardado correctamente!");
+      }
+    } catch (err) {
+      alert("Error al guardar horario: " + (err.response?.data?.error || err.message));
+    }
+  };
+
   useEffect(() => {
     (async () => {
       await cargarAsistenciasHoy();
       await cargarHistorial();
       await cargarJustificaciones();
       await cargarTrabajadores();
+      await cargarHorarioGeneral();
     })();
   }, []);
 
@@ -158,6 +200,7 @@ function Asistencia() {
         <button className={subVista === 'hoy' ? 'activo' : ''} onClick={() => setSubVista('hoy')}>Hoy</button>
         <button className={subVista === 'historial' ? 'activo' : ''} onClick={() => setSubVista('historial')}>Historial</button>
         <button className={subVista === 'justificaciones' ? 'activo' : ''} onClick={() => setSubVista('justificaciones')}>Justificaciones</button>
+        <button className={subVista === 'configurar' ? 'activo' : ''} onClick={() => setSubVista('configurar')}>Configurar Horario</button>
       </div>
 
       {/* KPIs de Asistencia */}
@@ -318,6 +361,79 @@ function Asistencia() {
             )}
           </tbody>
         </table>
+      )}
+
+      {subVista === 'configurar' && (
+        <div className="panel-configurar-horario" style={{ maxWidth: '600px', margin: '20px auto', padding: '24px', backgroundColor: 'var(--bg-paneles, #fff)', border: '1px solid var(--border-color, #e5e4e7)', borderRadius: '12px', boxShadow: 'var(--shadow)', textAlign: 'left' }}>
+          <h3 style={{ marginBottom: '8px', color: 'var(--color-texto-h)', fontSize: '20px', fontWeight: '600' }}>Programar Horarios del Sistema</h3>
+          <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '24px', lineHeight: '1.4' }}>
+            Establezca los horarios de entrada, tolerancia, inicio/fin de almuerzo (refrigerio) y salida para el control de asistencia de los operarios.
+          </p>
+          
+          <form onSubmit={handleGuardarHorario}>
+            <div className="grupo-formulario-fila">
+              <div className="grupo-formulario">
+                <label>Hora de Entrada *</label>
+                <input 
+                  type="time" 
+                  value={hEntrada} 
+                  onChange={(e) => setHEntrada(e.target.value)} 
+                  required 
+                />
+              </div>
+
+              <div className="grupo-formulario">
+                <label>Tolerancia (Minutos) *</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={hTolerancia} 
+                  onChange={(e) => setHTolerancia(e.target.value)} 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="grupo-formulario-fila" style={{ marginTop: '16px' }}>
+              <div className="grupo-formulario">
+                <label>Salida a Almuerzo *</label>
+                <input 
+                  type="time" 
+                  value={hSalidaAlm} 
+                  onChange={(e) => setHSalidaAlm(e.target.value)} 
+                  required 
+                />
+              </div>
+              <div className="grupo-formulario">
+                <label>Retorno de Almuerzo *</label>
+                <input 
+                  type="time" 
+                  value={hRetornoAlm} 
+                  onChange={(e) => setHRetornoAlm(e.target.value)} 
+                  required 
+                />
+              </div>
+            </div>
+
+            <div className="grupo-formulario" style={{ marginTop: '16px' }}>
+              <label>Hora de Salida Final *</label>
+              <input 
+                type="time" 
+                value={hSalida} 
+                onChange={(e) => setHSalida(e.target.value)} 
+                required 
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              className="btn-primario-azul" 
+              style={{ width: '100%', padding: '12px', fontWeight: 'bold', fontSize: '14px', borderRadius: '8px', cursor: 'pointer', border: 'none', color: '#fff', backgroundColor: '#3b82f6', marginTop: '20px' }}
+            >
+              Guardar Cambios de Horario
+            </button>
+          </form>
+        </div>
       )}
 
       {/* Modal Justificar Falta */}
